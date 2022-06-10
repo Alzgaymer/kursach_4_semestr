@@ -71,10 +71,10 @@ struct Game {
 	string ToString()
 	{
 		string str;
-		str += "game:";
-		str += "\nisOver: "		+ isOver	? "true" : "false";
-		str += "\nisMyTurn: "	+ isMyTurn	? "true" : "false";
-		str += "\ndoIWin: "		+ doIWin	? "true" : "false";
+		str += "game: ";
+		str += isOver	? "\nisOver:	true"		: "\nisOver:	false";
+		str += isMyTurn	? "\nisMyTurn:	true"		: "\nisMyTurn:	false";
+		str += doIWin	? "\ndoIWin:	true"		: "\ndoIWin:	false";
 		str += "\nAllSum: "		+ std::to_string(AllSum);
 		str += "\nlastNum: "	+ std::to_string(lastNum);
 		str += "\nArr: ";
@@ -113,7 +113,9 @@ void EnableDisableMenu(HWND hWnd, bool _b);
 void log(const string& output);
 string TransformLogMessage(int c, int mode, const string& message);
 void Draw();
-
+void ResultsLog();
+void ResultsGet();
+string GetTime();
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -615,8 +617,9 @@ void log(const string& output)
 }
 string TransformLogMessage(int c, int mode, const string& message)
 {
-	string str;
-	c == GLOBAL_SERVER ? str = "[SERVER] " : str = "[CLIENT] ";
+	string str = "[";
+	str += GetTime() + "] ";
+	c == GLOBAL_SERVER ? str += "[SERVER] " : str += "[CLIENT] ";
 	mode == DEBUG ? str += "[DEBUG] " : str += "[ERROR] ";
 	str += message;
 	return str;
@@ -657,7 +660,7 @@ INT_PTR CALLBACK Results(
 	switch (message)
 	{
 	case WM_INITDIALOG:
-
+		ResultsLog();
 		break;
 	case WM_COMMAND:
 		if (wParam == IDOK)
@@ -686,4 +689,45 @@ void Draw()
 
 	TextOut(WindowDC, (windowMaxX / 2) , (windowMaxY / 2) - 100, str.c_str(), str.size());
 	EndPaint(globalHWnd, &ps);
+}
+void ResultsLog()
+{
+	string time = GetTime();
+	MessageBox(globalHWnd, time.c_str(), "time", 1);
+	/*string data ;
+	const string _path = (std::filesystem::current_path().generic_string() + "\\results.txt").c_str();
+
+	HANDLE hf = CreateFile(
+		_path.c_str(),
+		FILE_APPEND_DATA,
+		FILE_SHARE_WRITE,
+		(LPSECURITY_ATTRIBUTES)NULL,
+		OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		(HANDLE)NULL);
+
+	DWORD bytesWritten = 0;
+	WriteFile(hf,
+		data.c_str(),
+		static_cast<DWORD>(data.size() - 1),
+		&bytesWritten,
+		0
+	);
+
+	CloseHandle(hf);*/
+}
+void ResultsGet(){}
+string GetTime()
+{
+#pragma warning(disable : 4996)
+	//C style define time
+	const size_t buffersize = 14;
+	char buffer[buffersize];
+	time_t seconds = time(NULL);
+	tm* timeinfo = localtime(&seconds);
+	const char* format = "%Y %I:%M:%S";
+	strftime(buffer, buffersize, format, timeinfo);
+	string str2(buffer);
+	
+	return str2;
 }
