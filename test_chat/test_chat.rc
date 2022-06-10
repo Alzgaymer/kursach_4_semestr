@@ -94,6 +94,21 @@ BEGIN
     LTEXT           "Static",IDC_STATIC_RESULTS,97,14,96,145
 END
 
+IDD_DIALOG3 DIALOGEX 0, 0, 254, 79
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    PUSHBUTTON      "Confirm",ID_CONFIRM,97,48,50,14
+END
+
+IDD_DIALOG4 DIALOGEX 0, 0, 254, 67
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Connection dialog"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -118,6 +133,24 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 170
     END
+
+    IDD_DIALOG3, DIALOG
+    BEGIN
+        MOCKUP, 0, 50, 0, 0, "..\..\..\..\OneDrive\??????? ????\pictures\bogdan.bmp"
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 247
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 72
+        HORZGUIDE, 2
+    END
+
+    IDD_DIALOG4, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 247
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 60
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -133,6 +166,16 @@ BEGIN
 END
 
 IDD_DIALOG2 AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_DIALOG3 AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_DIALOG4 AFX_DIALOG_LAYOUT
 BEGIN
     0
 END

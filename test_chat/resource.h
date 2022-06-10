@@ -5,7 +5,11 @@
 #define IDR_MENU1                       101
 #define IDD_DIALOG1                     102
 #define IDD_DIALOG2                     104
+#define IDD_DIALOG3                     106
+#define IDD_DIALOG4                     108
 #define IDC_STATIC_RESULTS              1001
+#define IDC_BUTTON1                     1003
+#define ID_CONFIRM                      1003
 #define ID_MENU_GAME                    40001
 #define ID_MENU_EXIT                    40003
 #define ID_BECOME_HOST                  40004
@@ -18,9 +22,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        106
+#define _APS_NEXT_RESOURCE_VALUE        110
 #define _APS_NEXT_COMMAND_VALUE         40009
-#define _APS_NEXT_CONTROL_VALUE         1002
+#define _APS_NEXT_CONTROL_VALUE         1004
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

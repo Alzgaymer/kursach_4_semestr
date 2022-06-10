@@ -1,4 +1,4 @@
-
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
 #define ID_TEXTBOX 0
@@ -23,16 +23,19 @@
 #include <chrono>
 #include <ctime>
 #include "resource.h"
+
 using std::string;
 
 
-string title = "Game20";
-string MainWindowClass = "MainWindow";
-string YouWin = "You win";
-string YourenemyWin = "Your enemy won";
-
+const string title = "Game20";
+const string MainWindowClass = "MainWindow";
+const string YouWin = "You win";
+const string YourenemyWin = "Your enemy won";
+const string port = "356";
 const int MaxPixelsFSX = GetSystemMetrics(SM_CXFULLSCREEN);
 const int MaxPixelsFSY = GetSystemMetrics(SM_CYFULLSCREEN);
+bool hasConnectServer = false;
+
 int windowMaxX;
 int windowMaxY;
 RECT window;
@@ -45,6 +48,7 @@ WSADATA ws;
 SOCKET sock = INVALID_SOCKET;
 SOCKET lisen = INVALID_SOCKET;
 SOCKET client = INVALID_SOCKET;
+string ipaddres = "0";
 
 ADDRINFO hints;
 ADDRINFO* addresult = nullptr;
@@ -56,6 +60,7 @@ struct Game {
 	int AllSum;//sum of all numbers
 	bool isMyTurn;
 	string nickname;
+	string enemy_nickname;
 	bool doIWin;
 	int lastNum;
 	string EncodeMessage();
@@ -71,7 +76,7 @@ struct Game {
 	string ToString()
 	{
 		string str;
-		str += "game: ";
+		str += "\ngame: ";
 		str += isOver	? "\nisOver:	true"		: "\nisOver:	false";
 		str += isMyTurn	? "\nisMyTurn:	true"		: "\nisMyTurn:	false";
 		str += doIWin	? "\ndoIWin:	true"		: "\ndoIWin:	false";
@@ -103,6 +108,18 @@ INT_PTR CALLBACK Results(
 	_In_ WPARAM wParam,
 	_In_ LPARAM lParam
 );
+INT_PTR CALLBACK EnterNickname(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+);
+INT_PTR CALLBACK Connection(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+);
 void CreateBoxes(HWND hWnd);
 void SetMaxXY(int& x, int& y, RECT rt);
 void SEND();
@@ -116,6 +133,7 @@ void Draw();
 void ResultsLog();
 void ResultsGet();
 string GetTime();
+string GetIpAddres();
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -197,14 +215,30 @@ LRESULT CALLBACK WndProc(
 		case ID_MENU_EXIT:
 			PostQuitMessage(60);
 			break;
-		case ID_BECOME_HOST:			
+		case ID_BECOME_HOST:
+			InvalidateRect(hWnd, &window, 1);
 			game = 0;
 			game.isOver = false;
 			isServer = true;
 			game.isMyTurn = true;
 			game.doIWin = false;
-			InvalidateRect(hWnd, &window, 1);					
-			CreateThread(0, 0, &Server, 0, 0, 0);			
+			hasConnectServer = false;
+
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG3),
+				hWnd,
+				EnterNickname,
+				0
+			); 
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG4),
+				hWnd,
+				Connection,
+				0
+			);
+				
 			EnableDisableButtons(hWnd, game.isMyTurn);			
 			break;
 		case ID_CONNECTTO:
@@ -213,8 +247,24 @@ LRESULT CALLBACK WndProc(
 			isServer = false;
 			game.isMyTurn = false; 
 			game.doIWin = false;
+			hasConnectServer = false;
+
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG3),
+				hWnd,
+				EnterNickname,
+				0
+			);
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG4),
+				hWnd,
+				Connection,
+				0
+			);
 			InvalidateRect(hWnd,&window,1);			
-			CreateThread(0, 0, &Client, 0, 0, 0);
+			
 			log(TransformLogMessage(isServer, DEBUG, game.ToString()));
 			EnableDisableButtons(hWnd, game.isMyTurn);			
 			break;
@@ -354,7 +404,7 @@ DWORD WINAPI Server(CONST LPVOID)
 	hints.ai_protocol = IPPROTO_TCP;
 	hints.ai_flags = AI_PASSIVE;
 
-	_bool = getaddrinfo(NULL, "8080", &hints, &addresult);
+	_bool = getaddrinfo(NULL, port.c_str(), &hints, &addresult);
 	if (_bool)
 	{
 		MessageBox(0, "", "getaddr failed", 1);
@@ -411,6 +461,7 @@ DWORD WINAPI Server(CONST LPVOID)
 	log(TransformLogMessage(!isServer, DEBUG, "Acception succesfull"));
 
 	closesocket(lisen);
+	hasConnectServer = true;
 	char rBuffer[RBUFFER_SIZE];
 	while (!game.isOver)
 	{
@@ -466,7 +517,8 @@ DWORD WINAPI Client(CONST LPVOID)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
-	_bool = getaddrinfo("localhost", "8080", &hints, &addresult);
+	
+	_bool = getaddrinfo(ipaddres.c_str(), port.c_str(), &hints, &addresult);
 
 	if (_bool)
 	{
@@ -501,7 +553,9 @@ DWORD WINAPI Client(CONST LPVOID)
 		ExitThread(69);
 	}
 	log(TransformLogMessage(!isServer, DEBUG, "Connection succesfull"));
+	
 	char rBuffer[RBUFFER_SIZE];
+
 	while (!game.isOver)
 	{
 		ZeroMemory(&rBuffer, sizeof(rBuffer));
@@ -660,7 +714,7 @@ INT_PTR CALLBACK Results(
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		ResultsLog();
+		ResultsGet();
 		break;
 	case WM_COMMAND:
 		if (wParam == IDOK)
@@ -693,7 +747,7 @@ void Draw()
 void ResultsLog()
 {
 	string time = GetTime();
-	MessageBox(globalHWnd, time.c_str(), "time", 1);
+	
 	/*string data ;
 	const string _path = (std::filesystem::current_path().generic_string() + "\\results.txt").c_str();
 
@@ -730,4 +784,157 @@ string GetTime()
 	string str2(buffer);
 	
 	return str2;
+}
+HWND t, label;
+INT_PTR CALLBACK EnterNickname(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		label = t = CreateWindow(
+			"static",
+			"Enter nickname",
+			WS_CHILD | WS_VISIBLE ,
+			130, 20,
+			130, 20,
+			hWnd, 0, 0, 0
+		);
+		t = CreateWindow(
+			"edit",
+			game.nickname.c_str(),
+			WS_CHILD | WS_VISIBLE | WS_BORDER,
+			130, 40,
+			130, 20,
+			hWnd, 0, 0, 0
+		);
+		break;
+	case WM_COMMAND:
+		if (wParam == ID_CONFIRM) {
+			GetWindowText(t, &game.nickname[0], 15);
+			log(TransformLogMessage(isServer, DEBUG, string("Your nickname: " + game.nickname)));
+			SendMessage(hWnd, WM_CLOSE, wParam, lParam);
+		}
+		break;
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+HWND tb, lb, bt;
+INT_PTR CALLBACK Connection(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	string ip = isServer?"Your IP addres: ":"Enter IP addres connect to";
+	switch (message)
+	{
+	case WM_INITDIALOG:
+		if (isServer) {
+			CreateThread(0, 0, &Server, 0, 0, 0);
+
+			ip += GetIpAddres();
+			// Cleanup
+			WSACleanup();
+			lb  = CreateWindow(
+				"static",
+				ip.c_str(),
+				WS_CHILD | WS_VISIBLE,
+				100, 30,
+				260, 20,
+				hWnd, 0, 0, 0
+			);
+
+		}
+		else {
+			lb = CreateWindow(
+				"static",
+				ip.c_str(),
+				WS_CHILD | WS_VISIBLE,
+				100, 30,
+				260, 20,
+				hWnd, 0, 0, 0
+			);
+
+#define ID_IP_BUTTON 15
+			tb = CreateWindow(
+				"edit",
+				"",
+				WS_CHILD | WS_VISIBLE ,
+				100, 50,
+				260, 20,
+				hWnd, 0, 0, 0
+			);
+			bt = CreateWindow(
+				"button",
+				"Connect",
+				WS_CHILD | WS_VISIBLE | WS_BORDER,
+				100, 70,
+				100, 20,
+				hWnd, (HMENU)ID_IP_BUTTON, 0, 0
+			);
+		}
+		break;
+	case WM_COMMAND:
+		if (wParam == ID_IP_BUTTON) {
+			if (!isServer) {
+				if (wParam == ID_IP_BUTTON)
+				{
+					GetWindowText(tb, &ipaddres[0], 14);
+					CreateThread(0, 0, &Client, 0, 0, 0);
+					SendMessage(hWnd, WM_CLOSE, wParam, lParam);
+				}
+			}
+			else {
+				while (!hasConnectServer);
+				if (hasConnectServer) SendMessage(hWnd, WM_CLOSE, wParam, lParam);
+			}
+		}
+		break;
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+string GetIpAddres()
+{
+	WSADATA ws;
+	// Initialize winsock dll
+	if (::WSAStartup(MAKEWORD(2, 2), &ws) == FALSE) {}
+	// Error handling
+
+	// Get local host name
+	char szHostName[128] = "";
+
+	::gethostname(szHostName, sizeof(szHostName));
+
+	// Get local IP addresses
+	struct sockaddr_in SocketAddress;
+	struct hostent* pHost = NULL;
+
+	pHost = ::gethostbyname(szHostName);
+	if (!pHost) {}
+	// Error handling
+
+	char aszIPAddresses[1][14]; // maximum of ten IP addresses
+
+	for (int iCnt = 0; ((pHost->h_addr_list[iCnt]) && (iCnt < 10)); ++iCnt)
+	{
+		memcpy(&SocketAddress.sin_addr, pHost->h_addr_list[iCnt], pHost->h_length);
+		strcpy(aszIPAddresses[iCnt], inet_ntoa(SocketAddress.sin_addr));
+	}
+	return aszIPAddresses[0];
 }
