@@ -38,7 +38,7 @@ int windowMaxY;
 RECT window;
 const char* sendBuffer;
 HDC WindowDC;
-
+HINSTANCE globalhIst;
 static HWND tbox, button1, button2, button3, confirmChoice, global_hWnd;
 BOOL _bool;
 WSADATA ws;
@@ -55,7 +55,7 @@ struct Game {
 	bool isOver;
 	int AllSum;//sum of all numbers
 	bool isMyTurn;
-	
+	string nickname;
 	bool doIWin;
 	int lastNum;
 	string EncodeMessage();
@@ -91,6 +91,18 @@ LRESULT CALLBACK WndProc(
 	_In_ WPARAM wParam,
 	_In_ LPARAM lParam
 );
+INT_PTR CALLBACK About(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+);
+INT_PTR CALLBACK Results(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+);
 void CreateBoxes(HWND hWnd);
 void SetMaxXY(int& x, int& y, RECT rt);
 void SEND();
@@ -100,6 +112,8 @@ void EnableDisableButtons(HWND hWnd, bool _b);
 void EnableDisableMenu(HWND hWnd, bool _b);
 void log(const string& output);
 string TransformLogMessage(int c, int mode, const string& message);
+void Draw();
+
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -142,6 +156,7 @@ int WINAPI WinMain(
 		hInstance,
 		NULL
 	);
+	globalhIst = hInstance;
 	globalHWnd = hwnd;
 	WindowDC = GetDC(hwnd);
 	ShowWindow(hwnd,
@@ -180,8 +195,7 @@ LRESULT CALLBACK WndProc(
 		case ID_MENU_EXIT:
 			PostQuitMessage(60);
 			break;
-		case ID_BECOME_HOST:
-			
+		case ID_BECOME_HOST:			
 			game = 0;
 			game.isOver = false;
 			isServer = true;
@@ -189,8 +203,7 @@ LRESULT CALLBACK WndProc(
 			game.doIWin = false;
 			InvalidateRect(hWnd, &window, 1);					
 			CreateThread(0, 0, &Server, 0, 0, 0);			
-			EnableDisableButtons(hWnd, game.isMyTurn);
-			//Server(0);
+			EnableDisableButtons(hWnd, game.isMyTurn);			
 			break;
 		case ID_CONNECTTO:
 			game = 0;
@@ -201,8 +214,28 @@ LRESULT CALLBACK WndProc(
 			InvalidateRect(hWnd,&window,1);			
 			CreateThread(0, 0, &Client, 0, 0, 0);
 			log(TransformLogMessage(isServer, DEBUG, game.ToString()));
-			EnableDisableButtons(hWnd, game.isMyTurn);
-			//Client(0);
+			EnableDisableButtons(hWnd, game.isMyTurn);			
+			break;
+		case ID_HELP_ABOUT:
+			
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG1),
+				hWnd,
+				About,
+				0
+			);
+			
+			break;
+		case ID_RESULTS_SHOWRESULTS:
+			DialogBoxParam(
+				globalhIst,
+				MAKEINTRESOURCE(IDD_DIALOG2),
+				hWnd,
+				Results,
+				0
+			);
+			break;
 		default:
 			break;
 		}
@@ -224,7 +257,7 @@ LRESULT CALLBACK WndProc(
 			t = num;
 			game.append(std::stoi(t));
 			SetWindowText(tbox, "1");
-			 
+			Draw();
 			isServer ? 
 				_bool = send(sock, game.EncodeMessage().c_str(), RBUFFER_SIZE, 0) :
 				_bool = send(client, game.EncodeMessage().c_str(), RBUFFER_SIZE, 0);
@@ -291,7 +324,7 @@ void CreateBoxes(HWND hWnd)
 
 	confirmChoice = CreateWindow(
 		"button",									//textbox
-		"put",										//value which shows by start
+		"Send",										//value which shows by start
 		WS_CHILD | WS_VISIBLE | WS_BORDER | ES_CENTER,
 		(windowMaxX / 2) - 112, (windowMaxY / 2) + 60,
 		232, 21,
@@ -395,6 +428,9 @@ DWORD WINAPI Server(CONST LPVOID)
 			game.AllSum >= 20 ? game.doIWin ? TextOut(WindowDC, 0, 0, YouWin.c_str(), YouWin.size())
 				: DrawTextA(WindowDC, YourenemyWin.c_str(), YourenemyWin.size(), &window, 1)
 				: 0;
+			Draw();
+
+
 		}
 	}
 	_bool = shutdown(sock, SD_BOTH);
@@ -480,6 +516,7 @@ DWORD WINAPI Client(CONST LPVOID)
 			game.AllSum >= 20 ? game.doIWin ? DrawTextA(WindowDC, YouWin.c_str(), YouWin.size(), &window, 1)
 				: DrawTextA(WindowDC, YourenemyWin.c_str(), YourenemyWin.size(), &window, 1)
 					: 0;
+			Draw();
 		}
 	}
 
@@ -553,7 +590,8 @@ void log(const string& output)
 	string f = output + "\r\n";
 	const string _path = (std::filesystem::current_path().generic_string() + "\\log.txt").c_str();
 			
-	HANDLE hf = CreateFile(_path.c_str(),
+	HANDLE hf = CreateFile(
+		_path.c_str(),
 		FILE_APPEND_DATA,
 		FILE_SHARE_WRITE,
 		(LPSECURITY_ATTRIBUTES)NULL,
@@ -582,4 +620,70 @@ string TransformLogMessage(int c, int mode, const string& message)
 	mode == DEBUG ? str += "[DEBUG] " : str += "[ERROR] ";
 	str += message;
 	return str;
+}
+INT_PTR CALLBACK About(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+
+		break;
+	case WM_COMMAND:
+		if(wParam == IDOK)
+			EndDialog(hWnd, 0);
+		return FALSE;
+		break;
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+		
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+INT_PTR CALLBACK Results(
+	_In_ HWND   hWnd,
+	_In_ UINT   message,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	switch (message)
+	{
+	case WM_INITDIALOG:
+
+		break;
+	case WM_COMMAND:
+		if (wParam == IDOK)
+			EndDialog(hWnd, 0);
+		return FALSE;
+		break;
+	case WM_CLOSE:
+		EndDialog(hWnd, 0);
+
+		break;
+	default:
+		break;
+	}
+	return FALSE;
+}
+void Draw()
+{
+	using std::to_string;
+	std::string str, strSum = "All sum: " + to_string(game.AllSum);
+	
+	for (const auto& val : game.arr)
+		str += to_string(val) + ", ";
+	PAINTSTRUCT ps;
+	BeginPaint(globalHWnd, &ps);
+	TextOut(WindowDC, (windowMaxX / 2) - 100, (windowMaxY / 2) - 100, strSum.c_str(), strSum.size());
+
+	TextOut(WindowDC, (windowMaxX / 2) , (windowMaxY / 2) - 100, str.c_str(), str.size());
+	EndPaint(globalHWnd, &ps);
 }
