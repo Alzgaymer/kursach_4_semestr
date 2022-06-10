@@ -130,10 +130,11 @@ void EnableDisableMenu(HWND hWnd, bool _b);
 void log(const string& output);
 string TransformLogMessage(int c, int mode, const string& message);
 void Draw();
-void ResultsLog();
+int ResultsLog();
 void ResultsGet();
 string GetTime();
 string GetIpAddres();
+void GameLogic();
 int WINAPI WinMain(
 	_In_ HINSTANCE hInstance,
 	_In_opt_ HINSTANCE hPrevInstance,
@@ -473,17 +474,8 @@ DWORD WINAPI Server(CONST LPVOID)
 			t += rBuffer;
 			game.DecodeMessage(rBuffer);
 
-			//MessageBox(0, t.c_str(), isServer ? "Server info" : "client info", 1);
 			log(TransformLogMessage(isServer ? GLOBAL_SERVER : GLOBAL_CLIENT, DEBUG, t));
-			game.AllSum >= 20 ? game.isOver = true : game.isOver = false;
-			game.isOver ? EnableDisableButtons(globalHWnd, false) : EnableDisableButtons(globalHWnd, true);
-
-			game.AllSum >= 20 ? game.doIWin ? TextOut(WindowDC, 0, 0, YouWin.c_str(), YouWin.size())
-				: DrawTextA(WindowDC, YourenemyWin.c_str(), YourenemyWin.size(), &window, 1)
-				: 0;
-			Draw();
-
-
+			GameLogic();
 		}
 	}
 	_bool = shutdown(sock, SD_BOTH);
@@ -565,14 +557,9 @@ DWORD WINAPI Client(CONST LPVOID)
 			string t = "message received: ";
 			t += rBuffer;
 			game.DecodeMessage(rBuffer);
-			//MessageBox(0, t.c_str(), isServer ? "Server info" : "client info", 1);
+			
 			log(TransformLogMessage(isServer ? GLOBAL_SERVER : GLOBAL_CLIENT, DEBUG, t));
-			game.AllSum >= 20 ? game.isOver = true : game.isOver = false;
-			game.isOver ? EnableDisableButtons(globalHWnd, false) : EnableDisableButtons(globalHWnd, true);
-			game.AllSum >= 20 ? game.doIWin ? DrawTextA(WindowDC, YouWin.c_str(), YouWin.size(), &window, 1)
-				: DrawTextA(WindowDC, YourenemyWin.c_str(), YourenemyWin.size(), &window, 1)
-					: 0;
-			Draw();
+			GameLogic();
 		}
 	}
 
@@ -744,12 +731,22 @@ void Draw()
 	TextOut(WindowDC, (windowMaxX / 2) , (windowMaxY / 2) - 100, str.c_str(), str.size());
 	EndPaint(globalHWnd, &ps);
 }
-void ResultsLog()
+int ResultsLog()
 {
 	string time = GetTime();
-	
-	/*string data ;
+
+	string data;
+	data += '[' + time + "] [";
+	isServer ? data += "Server]" : data += ipaddres.c_str(); data += ":" + port + "] ";
+	game.doIWin ? data += "You won\r\n" : data += "Enemy won\r\n";
+//#define MODE_DEBUG
+#ifdef MODE_DEBUG
+	const string _path = (std::filesystem::current_path().generic_string() + (!isServer ? "\\resultsClient.txt" : "\\resultsServer.txt")).c_str();
+#else
 	const string _path = (std::filesystem::current_path().generic_string() + "\\results.txt").c_str();
+
+#endif // MODE_DEBUG
+
 
 	HANDLE hf = CreateFile(
 		_path.c_str(),
@@ -768,7 +765,8 @@ void ResultsLog()
 		0
 	);
 
-	CloseHandle(hf);*/
+	CloseHandle(hf);
+	return 0;
 }
 void ResultsGet(){}
 string GetTime()
@@ -937,4 +935,15 @@ string GetIpAddres()
 		strcpy(aszIPAddresses[iCnt], inet_ntoa(SocketAddress.sin_addr));
 	}
 	return aszIPAddresses[0];
+}
+void GameLogic()
+{
+	game.AllSum >= 20 ? game.isOver = true : game.isOver = false;
+	game.isOver ? EnableDisableButtons(globalHWnd, false) : EnableDisableButtons(globalHWnd, true);
+
+	game.AllSum >= 20 ? game.doIWin ? TextOut(WindowDC, 0, 0, YouWin.c_str(), YouWin.size())
+								: DrawTextA(WindowDC, YourenemyWin.c_str(), YourenemyWin.size(), &window, 1)
+					: 0;
+	game.AllSum >= 20 ? ResultsLog() : 0;
+	Draw();
 }
