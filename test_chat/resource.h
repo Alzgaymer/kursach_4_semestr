@@ -7,8 +7,6 @@
 #define IDD_DIALOG2                     104
 #define IDD_DIALOG3                     106
 #define IDD_DIALOG4                     108
-#define IDC_STATIC_RESULTS              1001
-#define IDC_BUTTON1                     1003
 #define ID_CONFIRM                      1003
 #define ID_MENU_GAME                    40001
 #define ID_MENU_EXIT                    40003
@@ -17,13 +15,14 @@
 #define ID_ABOUT_ABOUT                  40006
 #define ID_HELP_ABOUT                   40007
 #define ID_RESULTS_SHOWRESULTS          40008
+#define ID_ABOUT                        40009
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        110
-#define _APS_NEXT_COMMAND_VALUE         40009
+#define _APS_NEXT_COMMAND_VALUE         40010
 #define _APS_NEXT_CONTROL_VALUE         1004
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

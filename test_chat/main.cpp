@@ -13,7 +13,7 @@
 #define DEBUG 0
 #define ERROR 1
 #define ALL begin(arr), end(arr)
-
+#define MODE_DEBUG
 #include <string>
 #include <Windows.h>
 #include <WinSock2.h>
@@ -131,7 +131,7 @@ void log(const string& output);
 string TransformLogMessage(int c, int mode, const string& message);
 void Draw();
 int ResultsLog();
-void ResultsGet();
+void ResultsGet(HWND hWnd);
 string GetTime();
 string GetIpAddres();
 void GameLogic();
@@ -269,7 +269,7 @@ LRESULT CALLBACK WndProc(
 			log(TransformLogMessage(isServer, DEBUG, game.ToString()));
 			EnableDisableButtons(hWnd, game.isMyTurn);			
 			break;
-		case ID_HELP_ABOUT:
+		case ID_ABOUT:
 			
 			DialogBoxParam(
 				globalhIst,
@@ -691,6 +691,7 @@ INT_PTR CALLBACK About(
 	}
 	return FALSE;
 }
+HWND l;
 INT_PTR CALLBACK Results(
 	_In_ HWND   hWnd,
 	_In_ UINT   message,
@@ -701,12 +702,15 @@ INT_PTR CALLBACK Results(
 	switch (message)
 	{
 	case WM_INITDIALOG:
-		ResultsGet();
-		break;
-	case WM_COMMAND:
-		if (wParam == IDOK)
-			EndDialog(hWnd, 0);
-		return FALSE;
+		l = CreateWindow(
+			"edit",
+			"",
+			WS_CHILD | WS_VISIBLE | ES_MULTILINE | WS_VSCROLL | ES_LEFT | ES_READONLY,
+			50, 0,
+			400, 400,
+			hWnd, 0, 0, 0
+		);
+		ResultsGet(l);
 		break;
 	case WM_CLOSE:
 		EndDialog(hWnd, 0);
@@ -737,7 +741,7 @@ int ResultsLog()
 
 	string data;
 	data += '[' + time + "] [";
-	isServer ? data += "Server]" : data += ipaddres.c_str(); data += ":" + port + "] ";
+	isServer ? data += "Server" : data += ipaddres.c_str(); data += ":" + port + "] ";
 	game.doIWin ? data += "You won\r\n" : data += "Enemy won\r\n";
 //#define MODE_DEBUG
 #ifdef MODE_DEBUG
@@ -768,7 +772,69 @@ int ResultsLog()
 	CloseHandle(hf);
 	return 0;
 }
-void ResultsGet(){}
+void ResultsGet(HWND hWnd)
+{
+
+#ifdef MODE_DEBUG
+	const string _path = (std::filesystem::current_path().generic_string() + (isServer ? "\\resultsClient.txt" : "\\resultsServer.txt")).c_str();
+#else
+	const string _path = (std::filesystem::current_path().generic_string() + "\\results.txt").c_str();
+#endif
+
+	HANDLE hf = CreateFile(
+		_path.c_str(),
+		FILE_ATTRIBUTE_READONLY,
+		FILE_SHARE_READ,
+		(LPSECURITY_ATTRIBUTES)NULL,
+		OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		(HANDLE)NULL);
+	if(hf == INVALID_HANDLE_VALUE)
+	{ 
+#ifdef MODE_DEBUG
+		MessageBox(hWnd, "INVALID_HANDLE_VALUE", "Read info", 1l);
+#endif // MODE_DEBUG
+		CloseHandle(hf);
+	}
+	 
+	string buffer, bufferToShow;
+	DWORD bytesToRead = 2048, readBytes = 0;
+	buffer.reserve(bytesToRead);
+	ReadFile(hf, &buffer[0], bytesToRead, &readBytes, 0);
+	
+	if (readBytes < bytesToRead) 
+	{
+		CloseHandle(hf);
+		hf = CreateFile(
+			_path.c_str(),
+			FILE_ATTRIBUTE_READONLY,
+			FILE_SHARE_READ,
+			(LPSECURITY_ATTRIBUTES)NULL,
+			OPEN_ALWAYS,
+			FILE_ATTRIBUTE_NORMAL,
+			(HANDLE)NULL);
+		if (hf == INVALID_HANDLE_VALUE)
+		{
+#ifdef MODE_DEBUG
+			MessageBox(hWnd, "INVALID_HANDLE_VALUE", "Read info", 1l);
+#endif // MODE_DEBUG
+			CloseHandle(hf);
+		}
+		bufferToShow.resize(readBytes+1);
+		readBytes = 0;
+		ReadFile(hf, &bufferToShow[0], bytesToRead, &readBytes, 0);
+	}
+#ifdef MODE_DEBUG
+	string inf = "\r\nBytes to read:"; inf += std::to_string(bytesToRead); inf += "\r\n";
+	inf = "Read bytes:	"; inf += std::to_string(readBytes); inf += "\r\n";
+
+	MessageBox(hWnd, inf.c_str(), "Results Read Info", 1l);
+	
+#endif // MODE_DEBUG
+	
+	SetWindowText(hWnd, bufferToShow.c_str());
+	CloseHandle(hf);
+}
 string GetTime()
 {
 #pragma warning(disable : 4996)

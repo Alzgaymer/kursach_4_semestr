@@ -65,10 +65,7 @@ BEGIN
     BEGIN
         MENUITEM "Show results",                ID_RESULTS_SHOWRESULTS
     END
-    POPUP "Help"
-    BEGIN
-        MENUITEM "About",                       ID_HELP_ABOUT
-    END
+    MENUITEM "About",                       40009
 END
 
 
@@ -90,8 +87,6 @@ STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "Dialog"
 FONT 8, "MS Shell Dlg", 400, 0, 0x1
 BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,243,156,50,14
-    LTEXT           "Static",IDC_STATIC_RESULTS,97,14,96,145
 END
 
 IDD_DIALOG3 DIALOGEX 0, 0, 254, 79
@@ -136,7 +131,6 @@ BEGIN
 
     IDD_DIALOG3, DIALOG
     BEGIN
-        MOCKUP, 0, 50, 0, 0, "..\..\..\..\OneDrive\??????? ????\pictures\bogdan.bmp"
         LEFTMARGIN, 7
         RIGHTMARGIN, 247
         TOPMARGIN, 7
